@@ -1,10 +1,18 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+import os.path
+from pathlib import Path
+
 import pandas as pd
 import requests
 import numpy as np
 import csv
 from bs4 import BeautifulSoup
+
+BASE_DIR = Path(__file__).resolve().parent
+
+head_hist = ['ID', 'year', 'team', 'country', 'div']
+head_id = ['ID', 'name', 'player_page', 'Pos', 'age(at 2022)']
 
 
 def extractYear(year):
@@ -15,22 +23,24 @@ def playerPOS(player):
     return player.text.split('\xa0')[1][2:]
 
 
-def extractInfo_players(csv_id, csv_hist, country, players):
-    for player in players:
-        if player.find('strong') is not None:
+def extractInfo_players(csv_id, csv_hist, country, players, start_position=None):
+    if start_position is None or start_position < 0:
+        start_position = 0
 
-            print(player.getText())
+    for player in players[start_position:]:
+        if player.find('strong') is not None:
+            player_name = player.find('a').getText()
+            print(player_name)
             page_players = requests.get('https://fbref.com/' + player.find('a').get('href'))
             soup_pp = BeautifulSoup(page_players.text, 'html.parser')
 
-            # frontTable = soup_pp.find_all('div',id="meta")
-            contentTable = soup_pp.find('table', id="stats_standard_dom_lg")
+            content_table = soup_pp.find('table', id="stats_standard_dom_lg")
 
-            if bool(contentTable) == 0:
+            if bool(content_table) == 0:
                 continue
             else:
 
-                pht = contentTable.find_all('tr', id="stats")  # player history table
+                pht = content_table.find_all('tr', id="stats")  # player history table
                 for row_year in np.arange(len(pht) - 1, 0, -1):
                     year = pht[row_year].find('th').text
 
@@ -41,7 +51,6 @@ def extractInfo_players(csv_id, csv_hist, country, players):
                     age = pht[len(pht) - 1].find_all('td')[0]
                     team = pht[row_year].find_all('td')[1]
                     div = pht[row_year].find_all('a')[3]
-                    print(team.text)
 
                     csv_hist.writerow([player.find('a').get('href').split('/')[-2],  # ID
                                        year,  # year          #year
@@ -61,7 +70,6 @@ def extractInfo_players(csv_id, csv_hist, country, players):
 def find_lastIndex(csvfile, list_):
     data = pd.read_csv(csvfile)
     last = data.iloc[len(data) - 1]['player_page']
-    print('ultimo registro:', last)
     i = 0
     for l in list_:
         i = i + 1
@@ -72,43 +80,64 @@ def find_lastIndex(csvfile, list_):
 
 if __name__ == '__main__':
 
-    # db.Base.metadata.create_all(db.engine)
-
+    # Parametros de configuracion
+    dist_folder = os.path.join(BASE_DIR, 'dist')
     url_root = 'https://fbref.com/en/country/players/'
-    url_country = 'ARG/Argentina-Football-Players'  # 'div_8236552747')
-    # url_country  = 'BRA/Brazil-Football-Players'
+    all_available_countries = ['BRA/Brazil-Football-players', 'ARG/Argentina-Football-Players']
 
-    try:
-        # busca archivo html en carpeta
-        with open(url_country[:3] + '_HTML', 'r') as f:
-            file = f.read()
-        soup = BeautifulSoup(file, 'html.parser')
-    except FileNotFoundError:
-        # abre y escribe en archivo y solicita url
-        page = requests.get(url_root + url_country)
-        soup = BeautifulSoup(page.text, 'html.parser')
-        with open(url_country[:3] + '_HTML', 'w') as f:
-            file = f.write(str(soup))
+    for url_country in all_available_countries:
 
-    players_list = soup.find("div", class_="section_content").find_all('p')
-    head_hist = ['ID', 'year', 'team', 'country', 'div']
-    head_id = ['ID', 'name', 'player_page', 'Pos', 'age(at 2022)']
+        country_id = url_country.split('/')[0].lower()
+        country_folder = os.path.join(dist_folder, country_id)
+        country_file = os.path.join(country_folder, f'{country_id}.country.html')
 
-    try:
-        with open(url_country[:3] + 'players_ID.csv', 'a+') as file_id, open(url_country[:3] + 'players_hist.csv',
-                                                                             'a+') as file_hist:
-            csv_hist = csv.writer(file_hist)
-            csv_id = csv.writer(file_id)
+        # Inicializar directorios si no existen
+        if not os.path.exists(country_folder):
+            os.makedirs(country_folder)
 
-            N = find_lastIndex(url_country[:3] + 'players_ID_c.csv', players_list)
-            print('N=', N)
-            extractInfo_players(csv_id, csv_hist, url_country[:3], players_list[N + 1:])
-    except FileNotFoundError:
-        # print('Operation failed: %s', e.strerror)
-        with open(url_country[:3] + 'players_ID.csv', 'w') as file_id, open(url_country[:3] + 'players_Hist.csv',
-                                                                            'w') as file_hist:
-            csv_hist = csv.writer(file_hist)
-            csv_id = csv.writer(file_id)
-            csv_hist.writerow(head_hist)
-            csv_id.writerow(head_id)
-            extractInfo_players(csv_id, csv_hist, url_country[:3], players_list[:])
+        # Lectura de datos
+        if os.path.exists(country_file):
+            with open(country_file, 'r', encoding='utf-8') as f:
+                page_content = f.read()
+        else:
+            page_response = requests.get(url_root + url_country)
+            page_content = page_response.text
+            with open(country_file, 'w', encoding='utf-8') as f:
+                file = f.write(page_content)
+
+        # Cargando datos en memoria
+        soup = BeautifulSoup(page_content, 'html.parser')
+
+        players_list = soup.find("div", class_="section_content").find_all('p')
+
+        # Procesando jugadores
+        player_file = os.path.join(country_folder, f'{country_id}.players.csv')
+        player_info_file = os.path.join(country_folder, f'{country_id}.hist.csv')
+
+        last_row = -1
+        open_files = []
+        # Crear archivos para almacenar datos
+        if os.path.exists(player_file):
+            f = open(player_file, 'a+', encoding='utf-8')
+            player_csv = csv.writer(f)
+            last_row = find_lastIndex(player_file, players_list)
+            open_files.append(f)
+        else:
+            f = open(player_file, 'w', encoding='utf-8')
+            player_csv = csv.writer(f)
+            player_csv.writerow(head_id)
+            open_files.append(f)
+
+        if os.path.exists(player_info_file):
+            f = open(player_info_file, 'a+', encoding='utf-8')
+            player_info_csv = csv.writer(f)
+            open_files.append(f)
+        else:
+            f = open(player_info_file, 'w', encoding='utf-8')
+            player_info_csv = csv.writer(f)
+            player_info_csv.writerow(head_hist)
+            open_files.append(f)
+
+        extractInfo_players(player_csv, player_info_csv, country_id, players_list, last_row + 1)
+        for f in open_files:
+            f.close()
