@@ -11,6 +11,9 @@ from bs4 import BeautifulSoup
 
 BASE_DIR = Path(__file__).resolve().parent
 
+head_hist = ['ID', 'year', 'team', 'country', 'div']
+head_id = ['ID', 'name', 'player_page', 'Pos', 'age(at 2022)']
+
 
 def extractYear(year):
     return float(year.split('-')[0])
@@ -106,9 +109,6 @@ if __name__ == '__main__':
         soup = BeautifulSoup(page_content, 'html.parser')
 
         players_list = soup.find("div", class_="section_content").find_all('p')
-
-        head_hist = ['ID', 'year', 'team', 'country', 'div']
-        head_id = ['ID', 'name', 'player_page', 'Pos', 'age(at 2022)']
 
         # Procesando jugadores
         player_file = os.path.join(country_folder, f'{country_id}.players.csv')
