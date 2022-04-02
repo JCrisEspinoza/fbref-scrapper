@@ -11,12 +11,13 @@ from bs4 import BeautifulSoup
 
 BASE_DIR = Path(__file__).resolve().parent
 
-head_hist = ['ID', 'year', 'team', 'country', 'div']
+head_hist = ['ID', 'Season', 'Squad', 'country', 'div']
 head_id = ['ID', 'name', 'player_page', 'Pos', 'age(at 2022)']
 
 
-def extractYear(year):
-    return float(year.split('-')[0])
+def checkPlayerActivity(player):
+    print(player.getText().split('\xa0')[0][-4:])
+    return float(player.getText().split('\xa0')[0][-4:])
 
 
 def playerPOS(player):
@@ -28,7 +29,8 @@ def extractInfo_players(csv_id, csv_hist, country, players, start_position=None)
         start_position = 0
 
     for player in players[start_position:]:
-        if player.find('strong') is not None:
+        #if player.find('strong') is not None:
+        if  checkPlayerActivity(player) > 2016:                        # check if player was active before 2016
             player_name = player.find('a').getText()
             print(player_name)
             page_players = requests.get('https://fbref.com/' + player.find('a').get('href'))
@@ -44,7 +46,7 @@ def extractInfo_players(csv_id, csv_hist, country, players, start_position=None)
                 for row_year in np.arange(len(pht) - 1, 0, -1):
                     year = pht[row_year].find('th').text
 
-                    if float(extractYear(year)) < 2016:
+                    if float(year.split('-')[0]) < 2016:              # check if actual season (XXXX - year) (year<2016) 
                         break
 
                     ligue = pht[row_year].find_all('a')[2]  # la segunda (2) col de la fila row_year de la lista "a"
@@ -83,7 +85,7 @@ if __name__ == '__main__':
     # Parametros de configuracion
     dist_folder = os.path.join(BASE_DIR, 'dist')
     url_root = 'https://fbref.com/en/country/players/'
-    all_available_countries = ['BRA/Brazil-Football-players', 'ARG/Argentina-Football-Players']
+    all_available_countries = ['ARG/Argentina-Football-players'] #, 'ARG/Argentina-Football-Players']
 
     for url_country in all_available_countries:
 
