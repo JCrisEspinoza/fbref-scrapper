@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 import os.path
-from pathlib import Path
+import re
+from datetime import datetime
 
 import pandas as pd
 import requests
@@ -9,9 +10,10 @@ import numpy as np
 import csv
 from bs4 import BeautifulSoup
 
+import database
 import entity
-
-BASE_DIR = Path(__file__).resolve().parent
+from config import BASE_DIR
+from util.parse import sanitize_number, sanitize_date
 
 head_hist = ['ID', 'Season', 'Squad', 'country', 'div']
 head_id = ['ID', 'name', 'player_page', 'Pos', 'age(at 2022)']
@@ -29,19 +31,65 @@ def playerPOS(player):
         return player.text.split('\xa0')[1][2:]
 
 
+def get_user_data(bs_user_page):
+    user_model = bs_user_page.find('div', itemtype="https://schema.org/Person")
+    name = user_model.select('p:nth-child(2) > strong')[0].text
+    page = bs_user_page.select('meta[property="og:url"]')[0]["content"]
+    print(f"{name}) '{page}'")
+    external_id_container = bs_user_page.select('input[name="player_id1"]')
+    external_id = external_id_container[0]["value"] if len(external_id_container) > 0 else "-1"
+
+    position = user_model.select('p:nth-child(3)')[0].text
+    if len(user_model.select('p:nth-child(3) > strong')):
+        position = position.replace(user_model.select('p:nth-child(3) > strong')[0].text, "").strip()
+
+    image_container = bs_user_page.select('#meta > div.media-item > img')
+    image = image_container[0]["src"] if len(image_container) > 0 else ""
+
+    height_container = user_model.select('span[itemprop="height"]')
+    height = height_container[0].text if len(height_container) > 0 else None
+
+    weight_container = user_model.select('span[itemprop="weight"]')
+    weight = weight_container[0].text if len(weight_container) > 0 else None
+
+    birth_container = user_model.select('span[itemprop="birthDate"]')
+    birth_date = ""
+    if len(birth_container) > 0:
+        row = birth_container[0]
+        birth_date = row["data-birth"] if "data-birth" in row else row.text
+
+    birth_place_container = user_model.select('span[itemprop="birthPlace"]')
+    birth_place = birth_place_container[0].text if len(birth_place_container) > 0 else ""
+
+    return {
+        "name": name,
+        "position": position.replace(u'\xa0', ' '),
+        "image": image,
+        "height": sanitize_number(height),
+        "weight": sanitize_number(weight),
+        "birth_date": sanitize_date(birth_date),
+        "birth_place": birth_place.strip(),
+        "url": page,
+        "external_id": external_id
+    }
+
+
 def extractInfo_players(csv_id, csv_hist, country, players, start_position=None):
     if start_position is None or start_position < 0:
         start_position = 0
 
     for player in players[start_position:]:
         # if player.find('strong') is not None:
-        if checkPlayerActivity(player) > 2016:  # check if player was active before 2016
+        if checkPlayerActivity(player) > 2016:
 
-            print(player.find('a').getText())  # print player name
-            page_players = requests.get('https://fbref.com/' + player.find('a').get('href'))
+            user_page = 'https://fbref.com/' + player.find('a').get('href')
+            page_players = requests.get(user_page)
             soup_pp = BeautifulSoup(page_players.text, 'html.parser')
             content_table = soup_pp.find('table', id="stats_standard_dom_lg")
-
+            user_data = get_user_data(soup_pp)
+            user = entity.User(**user_data, country=country)
+            database.session.add(user)
+            database.session.commit()
             if bool(content_table) == 0:
                 continue
             else:
@@ -57,7 +105,6 @@ def extractInfo_players(csv_id, csv_hist, country, players, start_position=None)
                     age = pht[len(pht) - 1].find_all('td')[0]
                     team = pht[row_year].find_all('td')[1]
                     div = pht[row_year].find_all('a')[3]
-
                     csv_hist.writerow([player.find('a').get('href').split('/')[-2],  # ID
                                        year,  # year/season
                                        team.text,  # team/squad
@@ -85,9 +132,11 @@ def find_lastIndex(csvfile, list_):
 
 
 if __name__ == '__main__':
-    entity.sync()
     # Parametros de configuracion
     dist_folder = os.path.join(BASE_DIR, 'dist')
+    if not os.path.exists(dist_folder):
+        os.makedirs(dist_folder)
+    entity.sync()
     url_root = 'https://fbref.com/en/country/players/'
     all_available_countries = ['BRA/Brasil-Football-players']  # , 'ARG/Argentina-Football-Players']
 

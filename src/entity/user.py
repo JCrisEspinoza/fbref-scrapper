@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Date
+from sqlalchemy import Column, Integer, String, Date, Float
 
 from database import Base
 
@@ -8,9 +8,14 @@ class User(Base):
     id = Column(Integer, primary_key=True)
     name = Column(String, nullable=False)
     external_id = Column(String, nullable=False)
-    born_date = Column(Date, nullable=False)
     country = Column(String, nullable=False)
-    info_page = Column(String, nullable=False)
+    birth_date = Column(Date)
+    birth_place = Column(String)
+    url = Column(String)
+    height = Column(Float)
+    weight = Column(Float)
+    position = Column(String)
+    image = Column(String)
 
     def __repr__(self):
         return f'Player({self.nombre})'

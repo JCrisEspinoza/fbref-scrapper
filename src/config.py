@@ -1,3 +1,6 @@
 from os import environ
+from pathlib import Path
 
-SQL_ALCHEMY_ENGINE = environ.get('SQL_ALCHEMY_ENGINE', 'sqlite:///local.db.sqlite3')
+BASE_DIR = Path(__file__).resolve().parent.resolve().parent
+SQL_ALCHEMY_ENGINE = environ.get('SQL_ALCHEMY_ENGINE', 'sqlite:///≤base_dir>/dist/local.db.sqlite3') \
+    .replace("≤base_dir>", str(BASE_DIR))
