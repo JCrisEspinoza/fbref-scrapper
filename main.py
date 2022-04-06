@@ -77,7 +77,7 @@ def find_lastIndex(csvfile, list_):
             return i
             break
 
-
+#INICIA PROCESO
 if __name__ == '__main__':
 
     # Parametros de configuracion
