@@ -6,4 +6,5 @@ SQL_ALCHEMY_ENGINE = environ.get('SQL_ALCHEMY_ENGINE', 'sqlite:///≤base_dir>/d
     .replace("≤base_dir>", str(BASE_DIR))
 
 FBREF_BASE_URL = 'https://fbref.com/'
+FBREF_COUNTRY_BASE_SLUG = 'en/country/players/'
 FBREF_COUNTRIES_TO_SCRAP = environ.get('FBREF_COUNTRIES_TO_SCRAP', 'BRA/Brasil-Football-players').split(',')

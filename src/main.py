@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 import os.path
-import re
-from datetime import datetime
+import urllib.parse as u
 
 import pandas as pd
 import requests
@@ -10,9 +9,10 @@ import numpy as np
 import csv
 from bs4 import BeautifulSoup
 
+import config
 import database
 import entity
-import scrap.user
+import scrap
 from config import BASE_DIR
 from util.parse import sanitize_number, sanitize_date
 
@@ -27,7 +27,6 @@ def playerPOS(player):
         return player.text.split('\xa0')[1][2:]
 
 
-
 def extractInfo_players(csv_id, csv_hist, country, players, start_position=None):
     if start_position is None or start_position < 0:
         start_position = 0
@@ -37,7 +36,7 @@ def extractInfo_players(csv_id, csv_hist, country, players, start_position=None)
         page_players = requests.get(user_page)
         soup_pp = BeautifulSoup(page_players.text, 'html.parser')
         content_table = soup_pp.find('table', id="stats_standard_dom_lg")
-        user_data = scrap.user.get_profile(soup_pp)
+        user_data = scrap.user.get(soup_pp)
         user = entity.User(**user_data, country=country)
         database.session.add(user)
         database.session.commit()
@@ -83,19 +82,24 @@ def find_lastIndex(csvfile, list_):
 
 
 if __name__ == '__main__':
+
     # Parametros de configuracion
     dist_folder = os.path.join(BASE_DIR, 'dist')
+
     if not os.path.exists(dist_folder):
         os.makedirs(dist_folder)
+    # Sincronizar modelos de BD
     entity.sync()
-    url_root = 'https://fbref.com/en/country/players/'
-    all_available_countries = ['BRA/Brasil-Football-players']  # , 'ARG/Argentina-Football-Players']
+    country_base_domain = u.urljoin(config.FBREF_BASE_URL, config.FBREF_COUNTRY_BASE_SLUG)
+    country_data_slugs = config.FBREF_COUNTRIES_TO_SCRAP
 
-    for url_country in all_available_countries:
+    for country_slug in country_data_slugs:
 
-        country_id = url_country.split('/')[0].lower()
+        country_id = country_slug.split('/')[0].lower()
         country_folder = os.path.join(dist_folder, country_id)
         country_file = os.path.join(country_folder, f'{country_id}.country.html')
+
+        country_info = scrap.country.get(country_base_domain, country_slug)
 
         # Inicializar directorios si no existen
         if not os.path.exists(country_folder):
@@ -106,7 +110,7 @@ if __name__ == '__main__':
             with open(country_file, 'r', encoding='utf-8') as f:
                 page_content = f.read()
         else:
-            page_response = requests.get(url_root + url_country)
+            page_response = requests.get(u.urljoin(country_base_domain, country_slug))
             page_content = page_response.text
             with open(country_file, 'w', encoding='utf-8') as f:
                 file = f.write(page_content)

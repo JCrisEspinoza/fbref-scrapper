@@ -1,9 +1,12 @@
 import re
+import urllib.parse as u
+import requests
+from bs4 import BeautifulSoup
 
 from util.parse import sanitize_number, sanitize_date
 
 
-def get_profile(bs_user_page):
+def get(bs_user_page):
     user_model = bs_user_page.find('div', itemtype="https://schema.org/Person")
     offset_location = 2
     name_container = user_model.select(f'p:nth-child({offset_location}) > strong')
@@ -53,3 +56,10 @@ def get_profile(bs_user_page):
         "url": page,
         "external_id": external_id
     }
+
+
+def list(url_country):
+    site_content = requests.get(url_country).text
+    content = BeautifulSoup(site_content, 'html.parser')
+    users = map(lambda link: u.urljoin(url_country, link.get("href")), content.select('.section_content > p > a'))
+    return [*users]
