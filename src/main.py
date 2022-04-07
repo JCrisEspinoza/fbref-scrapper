@@ -12,16 +12,12 @@ from bs4 import BeautifulSoup
 
 import database
 import entity
+import scrap.user
 from config import BASE_DIR
 from util.parse import sanitize_number, sanitize_date
 
 head_hist = ['ID', 'Season', 'Squad', 'country', 'div']
 head_id = ['ID', 'name', 'player_page', 'Pos', 'age(at 2022)']
-
-
-def checkPlayerActivity(player):
-    # print(player.getText().split('\xa0')[0][-4:])
-    return float(player.getText().split('\xa0')[0][-4:])
 
 
 def playerPOS(player):
@@ -31,102 +27,48 @@ def playerPOS(player):
         return player.text.split('\xa0')[1][2:]
 
 
-def get_user_data(bs_user_page):
-    user_model = bs_user_page.find('div', itemtype="https://schema.org/Person")
-    offset_location = 2
-    name_container = user_model.select(f'p:nth-child({offset_location}) > strong')
-
-    name = name_container[0].text.strip() if len(name_container) > 0 else "position"
-    if re.search(r'position', name, flags=re.IGNORECASE) is not None:
-        offset_location -= 1
-        name = user_model.select('h1[itemprop="name"]')[0].text.strip()
-
-    page = bs_user_page.select('meta[property="og:url"]')[0]["content"]
-    print(f"{'FIXED - ' if offset_location < 2 else '        '}{name} - '{page}'")
-    external_id_container = bs_user_page.select('input[name="player_id1"]')
-    external_id = external_id_container[0]["value"] if len(external_id_container) > 0 else None
-
-    position = user_model.select(f'p:nth-child({offset_location + 1})')[0].text
-    if len(user_model.select(f'p:nth-child({offset_location + 1}) > strong')):
-        position_label = user_model.select(f'p:nth-child({offset_location + 1}) > strong')[0].text
-        position = position.replace(position_label, "").strip()
-
-    image_container = bs_user_page.select('#meta > div.media-item > img')
-    image = image_container[0]["src"] if len(image_container) > 0 else ""
-
-    height_container = user_model.select('span[itemprop="height"]')
-    height = height_container[0].text if len(height_container) > 0 else None
-
-    weight_container = user_model.select('span[itemprop="weight"]')
-    weight = weight_container[0].text if len(weight_container) > 0 else None
-
-    birth_container = user_model.select('span[itemprop="birthDate"]')
-    birth_date = ""
-    if len(birth_container) > 0:
-        row = birth_container[0]
-        birth_date = row["data-birth"] if "data-birth" in row else row.text
-
-    birth_place_container = user_model.select('span[itemprop="birthPlace"]')
-    birth_place = birth_place_container[0].text if len(birth_place_container) > 0 else ""
-
-    return {
-        "active": external_id is not None,
-        "name": name,
-        "position": position.replace(u'\xa0', ' '),
-        "image": image,
-        "height": sanitize_number(height),
-        "weight": sanitize_number(weight),
-        "birth_date": sanitize_date(birth_date),
-        "birth_place": birth_place.strip(),
-        "url": page,
-        "external_id": external_id
-    }
-
 
 def extractInfo_players(csv_id, csv_hist, country, players, start_position=None):
     if start_position is None or start_position < 0:
         start_position = 0
 
     for player in players[start_position:]:
-        # if player.find('strong') is not None:
-        if checkPlayerActivity(player) > 2016:
+        user_page = 'https://fbref.com/' + player.find('a').get('href')
+        page_players = requests.get(user_page)
+        soup_pp = BeautifulSoup(page_players.text, 'html.parser')
+        content_table = soup_pp.find('table', id="stats_standard_dom_lg")
+        user_data = scrap.user.get_profile(soup_pp)
+        user = entity.User(**user_data, country=country)
+        database.session.add(user)
+        database.session.commit()
+        if bool(content_table) == 0:
+            continue
+        else:
 
-            user_page = 'https://fbref.com/' + player.find('a').get('href')
-            page_players = requests.get(user_page)
-            soup_pp = BeautifulSoup(page_players.text, 'html.parser')
-            content_table = soup_pp.find('table', id="stats_standard_dom_lg")
-            user_data = get_user_data(soup_pp)
-            user = entity.User(**user_data, country=country)
-            database.session.add(user)
-            database.session.commit()
-            if bool(content_table) == 0:
-                continue
-            else:
+            pht = content_table.find_all('tr', id="stats")  # player history table
+            for row_year in np.arange(len(pht) - 1, 0, -1):
+                year = pht[row_year].find('th').text
 
-                pht = content_table.find_all('tr', id="stats")  # player history table
-                for row_year in np.arange(len(pht) - 1, 0, -1):
-                    year = pht[row_year].find('th').text
+                if float(year.split('-')[0]) < 2016:  # check if on actual season (XXXX - year) (year<2016)
+                    break
 
-                    if float(year.split('-')[0]) < 2016:  # check if on actual season (XXXX - year) (year<2016)
-                        break
+                ligue = pht[row_year].find_all('a')[2]  # la segunda (2) col de la fila row_year de la lista "a"
+                age = pht[len(pht) - 1].find_all('td')[0]
+                team = pht[row_year].find_all('td')[1]
+                div = pht[row_year].find_all('a')[3]
+                csv_hist.writerow([player.find('a').get('href').split('/')[-2],  # ID
+                                   year,  # year/season
+                                   team.text,  # team/squad
+                                   ligue.getText(),  # ligue/country
+                                   div.getText()  # division
+                                   ])
 
-                    ligue = pht[row_year].find_all('a')[2]  # la segunda (2) col de la fila row_year de la lista "a"
-                    age = pht[len(pht) - 1].find_all('td')[0]
-                    team = pht[row_year].find_all('td')[1]
-                    div = pht[row_year].find_all('a')[3]
-                    csv_hist.writerow([player.find('a').get('href').split('/')[-2],  # ID
-                                       year,  # year/season
-                                       team.text,  # team/squad
-                                       ligue.getText(),  # ligue/country
-                                       div.getText()  # division
-                                       ])
-
-                csv_id.writerow([player.find('a').get('href').split('/')[-2],  # ID
-                                 player.find('a').getText(),  # name
-                                 player.find('a').get('href'),  # page
-                                 playerPOS(player),  # position
-                                 age.getText()  # age at last season
-                                 ])
+            csv_id.writerow([player.find('a').get('href').split('/')[-2],  # ID
+                             player.find('a').getText(),  # name
+                             player.find('a').get('href'),  # page
+                             playerPOS(player),  # position
+                             age.getText()  # age at last season
+                             ])
 
 
 def find_lastIndex(csvfile, list_):
