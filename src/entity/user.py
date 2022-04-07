@@ -1,13 +1,14 @@
-from sqlalchemy import Column, Integer, String, Date, Float
+from sqlalchemy import Column, Integer, String, Date, Float, Boolean
 
 from database import Base
 
 
 class User(Base):
     __tablename__ = 'user'
+    active = Column(Boolean, default=True)
     id = Column(Integer, primary_key=True)
     name = Column(String, nullable=False)
-    external_id = Column(String, nullable=False)
+    external_id = Column(String, nullable=True, unique=True)
     country = Column(String, nullable=False)
     birth_date = Column(Date)
     birth_place = Column(String)
