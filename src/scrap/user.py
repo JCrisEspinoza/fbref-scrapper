@@ -6,7 +6,10 @@ from bs4 import BeautifulSoup
 from util.parse import sanitize_number, sanitize_date
 
 
-def get(bs_user_page):
+def get(user_url):
+    user_page = requests.get(user_url).text
+    bs_user_page = BeautifulSoup(user_page, 'html.parser')
+
     user_model = bs_user_page.find('div', itemtype="https://schema.org/Person")
     offset_location = 2
     name_container = user_model.select(f'p:nth-child({offset_location}) > strong')
@@ -19,7 +22,7 @@ def get(bs_user_page):
     page = bs_user_page.select('meta[property="og:url"]')[0]["content"]
     print(f"{'FIXED - ' if offset_location < 2 else '        '}{name} - '{page}'")
     external_id_container = bs_user_page.select('input[name="player_id1"]')
-    external_id = external_id_container[0]["value"] if len(external_id_container) > 0 else None
+    external_id = external_id_container[0]["value"] if len(external_id_container) > 0 else external_id_from_slug(page)
 
     position = user_model.select(f'p:nth-child({offset_location + 1})')[0].text
     if len(user_model.select(f'p:nth-child({offset_location + 1}) > strong')):
@@ -63,3 +66,7 @@ def list(url_country):
     content = BeautifulSoup(site_content, 'html.parser')
     users = map(lambda link: u.urljoin(url_country, link.get("href")), content.select('.section_content > p > a'))
     return [*users]
+
+
+def external_id_from_slug(user_url):
+    return user_url.split('/')[-2]
