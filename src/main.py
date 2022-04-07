@@ -10,7 +10,7 @@ import csv
 from bs4 import BeautifulSoup
 
 import config
-import database
+import database as db
 import entity
 import scrap
 from config import BASE_DIR
@@ -66,14 +66,20 @@ def extractInfo_players(players, start_position=None):
 
 def migrate_user(user_info, country_info):
     user = entity.User(**user_info, country=country_info["id"])
-    database.session.add(user)
-    database.session.commit()
+    db.session.add(user)
+    db.session.commit()
 
 
 def migrate_country(country_info):
     users = country_info.get('users')
 
     for user_url in users:
+        external_id = scrap.user.external_id_from_slug(user_url)
+        user_exists = db.session.query(entity.User).filter_by(external_id=external_id).count() > 0
+
+        if user_exists:
+            continue
+
         user_info = scrap.user.get(user_url)
         migrate_user(user_info, country_info)
 

@@ -15,14 +15,16 @@ def get(user_url):
     name_container = user_model.select(f'p:nth-child({offset_location}) > strong')
 
     name = name_container[0].text.strip() if len(name_container) > 0 else "position"
-    if re.search(r'position', name, flags=re.IGNORECASE) is not None:
+    name_tags = name.lower().split(" ")
+    slug_name = user_url.split("/")[-1].lower()
+    slug_and_name_correlation = sum(map(lambda tag: slug_name.find(tag) > -1, name_tags))
+    if slug_and_name_correlation == 0:
         offset_location -= 1
         name = user_model.select('h1[itemprop="name"]')[0].text.strip()
 
-    page = bs_user_page.select('meta[property="og:url"]')[0]["content"]
-    print(f"{'FIXED - ' if offset_location < 2 else '        '}{name} - '{page}'")
+    print(f"{'FIXED - ' if offset_location < 2 else '        '}{name} - '{user_url}'")
     external_id_container = bs_user_page.select('input[name="player_id1"]')
-    external_id = external_id_container[0]["value"] if len(external_id_container) > 0 else external_id_from_slug(page)
+    external_id = external_id_container[0]["value"] if len(external_id_container) > 0 else external_id_from_slug(user_url)
 
     position = user_model.select(f'p:nth-child({offset_location + 1})')[0].text
     if len(user_model.select(f'p:nth-child({offset_location + 1}) > strong')):
@@ -56,7 +58,7 @@ def get(user_url):
         "weight": sanitize_number(weight),
         "birth_date": sanitize_date(birth_date),
         "birth_place": birth_place.strip(),
-        "url": page,
+        "url": user_url,
         "external_id": external_id
     }
 
