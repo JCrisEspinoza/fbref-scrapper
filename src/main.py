@@ -72,19 +72,26 @@ def migrate_user(user_info, country_info):
 
 def migrate_country(country_info):
     users = country_info.get('users')
-    stats = set([])
+    stats = dict()
+    last_keys = 0
+    skipped_users = 0
     for user_url in users:
         external_id = scrap.user.external_id_from_slug(user_url)
         user_exists = db.session.query(entity.User).filter_by(external_id=external_id).count() > 0
 
         if user_exists:
+            skipped_users += 1
             continue
-
+        if skipped_users > 0:
+            print(f'Skipped Users: {skipped_users}')
+            skipped_users = 0
         user_info = scrap.user.get(user_url)
         user_stats = scrap.stats.get(user_url)
         for stat in user_stats:
-            stats = stats.union(set(stat.keys()))
-        print(len(stats), stats)
+            stats.update(stat)
+        if last_keys != len(stats.keys()):
+            print(len(stats.keys()), stats)
+            last_keys = len(stats.keys())
         migrate_user(user_info, country_info)
 
 
