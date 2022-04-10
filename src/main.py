@@ -3,25 +3,11 @@
 import json
 import os.path
 import urllib.parse as u
-
-import pandas as pd
-import requests
-import numpy as np
-import csv
-from bs4 import BeautifulSoup
-
 import config
 import database as db
 import entity
 import scrap
 from config import BASE_DIR
-
-stats_relationships = {
-    'basic': entity.stats.BasicStats,
-    'misc': entity.stats.MiscStats,
-    'time': entity.stats.TimeStats,
-    'shooting': entity.stats.ShootingStats
-}
 
 
 def migrate_user(user_info, country_info, user_stats):
@@ -29,7 +15,7 @@ def migrate_user(user_info, country_info, user_stats):
     db.session.add(user)
     db.session.commit()
     for kind in user_stats:
-        model = stats_relationships.get(kind)
+        model = entity.stats.stats_relationships.get(kind)
         stats = user_stats.get(kind)
         for stat in stats:
             db.session.add(model(**stat, user_id=user.id))
