@@ -18,7 +18,10 @@ class User(Base):
     weight = Column(Float)
     position = Column(String)
     image = Column(String)
-    children = relationship("Stats")
+    misc_stats = relationship("MiscStats")
+    basic_stats = relationship("BasicStats")
+    shooting_stats = relationship("ShootingStats")
+    time_stats = relationship("TimeStats")
 
     def __repr__(self):
         return f'Player({self.nombre})'

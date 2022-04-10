@@ -39,8 +39,8 @@ valid_keys = [
 ]
 
 
-class Stats(Base):
-    __tablename__ = 'stats'
+class BasicStats(Base):
+    __tablename__ = 'basic_stats'
     id = Column(Integer, primary_key=True)
     user_id = Column(Integer, ForeignKey('user.id'))
     season = Column(Integer)
@@ -78,10 +78,10 @@ class Stats(Base):
     def __init__(self, *args, **kwargs):
         new_kwargs = {pair[0]: pair[1] for pair in
                       filter(lambda pair: pair[0] in valid_keys and pair[1] not in ['', None], kwargs.items())}
-        super(Stats, self).__init__(*args, **new_kwargs)
+        super(BasicStats, self).__init__(*args, **new_kwargs)
 
     def __repr__(self):
-        return f'Stats({self.user_id})'
+        return f'BasicStats({self.user_id})'
 
     def __str__(self):
         return f'{self.id} ({self.user_id})'
