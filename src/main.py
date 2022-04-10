@@ -64,16 +64,17 @@ def extractInfo_players(players, start_position=None):
                    ])
 
 
-def migrate_user(user_info, country_info):
+def migrate_user(user_info, country_info, user_stats):
     user = entity.User(**user_info, country=country_info["id"])
     db.session.add(user)
+    db.session.commit()
+    for stat in user_stats:
+        db.session.add(entity.Stats(**stat, user_id=user.id))
     db.session.commit()
 
 
 def migrate_country(country_info):
     users = country_info.get('users')
-    stats = dict()
-    last_keys = 0
     skipped_users = 0
     for user_url in users:
         external_id = scrap.user.external_id_from_slug(user_url)
@@ -83,16 +84,11 @@ def migrate_country(country_info):
             skipped_users += 1
             continue
         if skipped_users > 0:
-            print(f'Skipped Users: {skipped_users}')
+            print(f'\nSkipped Users: {skipped_users}\n')
             skipped_users = 0
         user_info = scrap.user.get(user_url)
         user_stats = scrap.stats.get(user_url)
-        for stat in user_stats:
-            stats.update(stat)
-        if last_keys != len(stats.keys()):
-            print(len(stats.keys()), stats)
-            last_keys = len(stats.keys())
-        migrate_user(user_info, country_info)
+        migrate_user(user_info, country_info, user_stats)
 
 
 def initialize_environment():

@@ -1,4 +1,5 @@
 from sqlalchemy import Column, Integer, String, Date, Float, Boolean
+from sqlalchemy.orm import relationship
 
 from database import Base
 
@@ -17,6 +18,7 @@ class User(Base):
     weight = Column(Float)
     position = Column(String)
     image = Column(String)
+    children = relationship("Stats")
 
     def __repr__(self):
         return f'Player({self.nombre})'
