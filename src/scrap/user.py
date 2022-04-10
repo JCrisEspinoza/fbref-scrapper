@@ -66,10 +66,9 @@ def get(user_url):
 def list(url_country):
     site_content = requests.get(url_country).text
     content = BeautifulSoup(site_content, 'html.parser')
-    users = map(lambda link: u.urljoin(url_country, link.get("href")), content.select('.section_content > p > a'))
-    return [*users]
+    links = filter(lambda link: link.get("href").find('players') > -1, content.select('.section_content > p > a'))
+    return [*map(lambda link: u.urljoin(url_country, link.get("href")), links)]
 
 
 def external_id_from_slug(user_url):
-    slug = user_url.split('/')[-2]
-    return slug if ''.find('countries') < 0 else None
+    return user_url.split('/')[-2]
