@@ -72,7 +72,7 @@ def migrate_user(user_info, country_info):
 
 def migrate_country(country_info):
     users = country_info.get('users')
-
+    stats = set([])
     for user_url in users:
         external_id = scrap.user.external_id_from_slug(user_url)
         user_exists = db.session.query(entity.User).filter_by(external_id=external_id).count() > 0
@@ -81,6 +81,10 @@ def migrate_country(country_info):
             continue
 
         user_info = scrap.user.get(user_url)
+        user_stats = scrap.stats.get(user_url)
+        for stat in user_stats:
+            stats = stats.union(set(stat.keys()))
+        print(len(stats), stats)
         migrate_user(user_info, country_info)
 
 

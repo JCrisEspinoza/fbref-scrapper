@@ -1,4 +1,3 @@
-import re
 import urllib.parse as u
 import requests
 from bs4 import BeautifulSoup
@@ -24,7 +23,8 @@ def get(user_url):
 
     print(f"{'FIXED - ' if offset_location < 2 else '        '}{name} - '{user_url}'")
     external_id_container = bs_user_page.select('input[name="player_id1"]')
-    external_id = external_id_container[0]["value"] if len(external_id_container) > 0 else external_id_from_slug(user_url)
+    external_id = external_id_container[0]["value"] if len(external_id_container) > 0 else external_id_from_slug(
+        user_url)
 
     position = user_model.select(f'p:nth-child({offset_location + 1})')[0].text
     if len(user_model.select(f'p:nth-child({offset_location + 1}) > strong')):
@@ -71,4 +71,5 @@ def list(url_country):
 
 
 def external_id_from_slug(user_url):
-    return user_url.split('/')[-2]
+    slug = user_url.split('/')[-2]
+    return slug if ''.find('countries') < 0 else None
