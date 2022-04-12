@@ -25,4 +25,9 @@ def get(user_url):
         'shooting': _get(user_url, 'stats_shooting_dom_lg'),
         'time': _get(user_url, 'stats_playing_time_dom_lg'),
         'misc': _get(user_url, 'stats_misc_dom_lg'),
+        'passing': _get(user_url, 'stats_passing_dom_lg'),
+        'passing_types': _get(user_url, 'stats_passing_types_dom_lg'),
+        'gca': _get(user_url, 'stats_gca_dom_lg'),
+        'defense': _get(user_url, 'stats_defense_dom_lg'),
+        'possession': _get(user_url, 'stats_possession_dom_lg')
     }
