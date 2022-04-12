@@ -6,12 +6,6 @@ valid_keys = [
     "id",
     "user_id",
     "season",
-    "age",
-    "squad",
-    "country",
-    "comp_level",
-    "lg_finish",
-    "minutes_90s",
     "touches",
     "touches_def_pen_area",
     "touches_def_3rd",
@@ -44,12 +38,6 @@ class PossessionStats(Base):
     id = Column(Integer, primary_key=True)
     user_id = Column(Integer, ForeignKey('user.id'))
     season = Column(Integer)
-    age = Column(Integer)
-    squad = Column(String)
-    country = Column(String)
-    comp_level = Column(String)
-    lg_finish = Column(String)
-    minutes_90s = Column(Float)
     touches = Column(Integer)
     touches_def_pen_area = Column(Integer)
     touches_def_3rd = Column(Integer)

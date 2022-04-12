@@ -6,12 +6,6 @@ valid_keys = [
     "id",
     "user_id",
     "season",
-    "age",
-    "squad",
-    "country",
-    "comp_level",
-    "lg_finish",
-    "minutes_90s",
     "passes_completed",
     "passes",
     "passes_pct",
@@ -42,12 +36,6 @@ class PassingStats(Base):
     id = Column(Integer, primary_key=True)
     user_id = Column(Integer, ForeignKey('user.id'))
     season = Column(Integer)
-    age = Column(Integer)
-    squad = Column(String)
-    country = Column(String)
-    comp_level = Column(String)
-    lg_finish = Column(String)
-    minutes_90s = Column(Float)
     passes_completed = Column(Integer)
     passes = Column(Integer)
     passes_pct = Column(Float)

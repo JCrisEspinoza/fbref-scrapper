@@ -7,16 +7,10 @@ valid_keys = [
     "id",
     "user_id",
     "season",
-    "age",
-    "squad",
-    "country",
-    "comp_level",
-    "lg_finish",
     "games",
     "minutes",
     "minutes_per_game",
     "minutes_pct",
-    "minutes_90s",
     "games_starts",
     "minutes_per_start",
     "games_complete",
@@ -37,16 +31,10 @@ class TimeStats(Base):
     id = Column(Integer, primary_key=True)
     user_id = Column(Integer, ForeignKey('user.id'))
     season = Column(String)
-    age = Column(Integer)
-    squad = Column(String)
-    country = Column(String)
-    comp_level = Column(String)
-    lg_finish = Column(String)
     games = Column(Integer)
     minutes = Column(String)
     minutes_per_game = Column(Integer)
     minutes_pct = Column(Float)
-    minutes_90s = Column(Float)
     games_starts = Column(Integer)
     minutes_per_start = Column(Integer)
     games_complete = Column(Integer)

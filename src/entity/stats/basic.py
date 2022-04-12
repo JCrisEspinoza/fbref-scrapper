@@ -6,6 +6,8 @@ valid_keys = [
     "id",
     "user_id",
     "season",
+    "season_start_date",
+    "season_end_date",
     "age",
     "squad",
     "country",
@@ -43,7 +45,9 @@ class BasicStats(Base):
     __tablename__ = 'basic_stats'
     id = Column(Integer, primary_key=True)
     user_id = Column(Integer, ForeignKey('user.id'))
-    season = Column(Integer)
+    season = Column(String)
+    season_start_date = Column(Integer)
+    season_end_date = Column(Integer)
     age = Column(Integer)
     squad = Column(String)
     country = Column(String)
@@ -78,6 +82,12 @@ class BasicStats(Base):
     def __init__(self, *args, **kwargs):
         new_kwargs = {pair[0]: pair[1] for pair in
                       filter(lambda pair: pair[0] in valid_keys and pair[1] not in ['', None], kwargs.items())}
+
+        dates = new_kwargs.get("season").split("-")
+
+        new_kwargs["season_start_date"] = int(dates[0])
+        new_kwargs["season_end_date"] = int(dates[-1])
+
         super(BasicStats, self).__init__(*args, **new_kwargs)
 
     def __repr__(self):

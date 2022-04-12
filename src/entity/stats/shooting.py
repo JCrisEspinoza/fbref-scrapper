@@ -6,12 +6,6 @@ valid_keys = [
     "id",
     "user_id",
     "season",
-    "age",
-    "squad",
-    "country",
-    "comp_level",
-    "lg_finish",
-    "minutes_90s",
     "goals",
     "shots_total",
     "shots_on_target",
@@ -31,12 +25,6 @@ class ShootingStats(Base):
     id = Column(Integer, primary_key=True)
     user_id = Column(Integer, ForeignKey('user.id'))
     season = Column(String)
-    age = Column(Integer)
-    squad = Column(String)
-    country = Column(String)
-    comp_level = Column(String)
-    lg_finish = Column(String)
-    minutes_90s = Column(Float)
     goals = Column(Integer)
     shots_total = Column(Integer)
     shots_on_target = Column(Integer)

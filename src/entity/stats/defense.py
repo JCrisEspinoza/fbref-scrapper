@@ -6,12 +6,6 @@ valid_keys = [
     "id",
     "user_id",
     "season",
-    "age",
-    "squad",
-    "country",
-    "comp_level",
-    "lg_finish",
-    "minutes_90s",
     "tackles",
     "tackles_won",
     "tackles_def_3rd",
@@ -43,12 +37,6 @@ class DefenseStats(Base):
     id = Column(Integer, primary_key=True)
     user_id = Column(Integer, ForeignKey('user.id'))
     season = Column(Integer)
-    age = Column(Integer)
-    squad = Column(String)
-    country = Column(String)
-    comp_level = Column(String)
-    lg_finish = Column(String)
-    minutes_90s = Column(Float)
     tackles = Column(Integer)
     tackles_won = Column(Integer)
     tackles_def_3rd = Column(Integer)

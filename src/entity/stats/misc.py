@@ -6,12 +6,6 @@ valid_keys = [
     "id",
     "user_id",
     "season",
-    "age",
-    "squad",
-    "country",
-    "comp_level",
-    "lg_finish",
-    "minutes_90s",
     "cards_yellow",
     "cards_red",
     "cards_yellow_red",
@@ -32,12 +26,6 @@ class MiscStats(Base):
     id = Column(Integer, primary_key=True)
     user_id = Column(Integer, ForeignKey('user.id'))
     season = Column(String)
-    age = Column(Integer)
-    squad = Column(String)
-    country = Column(String)
-    comp_level = Column(String)
-    lg_finish = Column(String)
-    minutes_90s = Column(Float)
     cards_yellow = Column(Integer)
     cards_red = Column(Integer)
     cards_yellow_red = Column(Integer)
