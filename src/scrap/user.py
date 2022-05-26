@@ -10,6 +10,10 @@ def get(user_url):
     bs_user_page = BeautifulSoup(user_page, 'html.parser')
 
     user_model = bs_user_page.find('div', itemtype="https://schema.org/Person")
+
+    if user_model is None:
+        return None
+
     offset_location = 2
     name_container = user_model.select(f'p:nth-child({offset_location}) > strong')
 
