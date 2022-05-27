@@ -36,15 +36,18 @@ def migrate_country(country_info):
         if skipped_users > 0:
             print(f'\nSkipped Users: {skipped_users}\n')
             skipped_users = 0
+
         user_info = scrap.user.get(user_url)
         user_stats = scrap.stats.get(user_url)
-
-        for key, val in user_stats.items():
-            if key not in stats_data:
-                stats_data[key] = {}
-            for row in val:
-                stats_data[key].update(row)
-        migrate_user(user_info, country_info, user_stats)
+        if user_info is not None and user_stats is not None:
+            for key, val in user_stats.items():
+                if key not in stats_data:
+                    stats_data[key] = {}
+                for row in val:
+                    stats_data[key].update(row)
+            migrate_user(user_info, country_info, user_stats)
+        else:
+            print(f'Information not found for: "{user_url}"')
 
 
 def initialize_environment():
